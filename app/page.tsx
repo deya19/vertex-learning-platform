@@ -105,7 +105,7 @@ export default function Home() {
           <Link href="/my-learning">My Learning</Link>
         </nav>
         <div className="home-actions">
-          <button className="icon-button" type="button" aria-label="Notifications"><Icon name="bell" /></button>
+          <span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>
           <div className="avatar" aria-label="User profile">A</div>
         </div>
       </header>
