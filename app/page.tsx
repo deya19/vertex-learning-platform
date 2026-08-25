@@ -1,3 +1,9 @@
+import {
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 import Link from "next/link";
 
 type IconName = "bell" | "search" | "arrow" | "level" | "clock" | "modules" | "star";
@@ -106,7 +112,19 @@ export default function Home() {
         </nav>
         <div className="home-actions">
           <span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>
-          <div className="avatar" aria-label="User profile">A</div>
+          <Show when="signed-out">
+            <div className="auth-actions">
+              <SignInButton mode="modal">
+                <button className="auth-link" type="button">Sign in</button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="auth-signup" type="button">Sign up</button>
+              </SignUpButton>
+            </div>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </header>
 
