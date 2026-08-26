@@ -33,7 +33,7 @@ export const LESSON_BY_SLUG_QUERY = defineQuery(/* groq */ `
   *[_type == "lesson" && slug.current == $slug][0] {
     _id, title, "slug": slug.current, videoUrl, poster${imageProjection}, duration, isFreePreview, studentCount,
     notes, keyPoints, proTip, resources[]{_key, type, title, description, url},
-    "course": *[_type == "course" && references(^._id)][0] {
+    "course": *[_type == "course" && references(^._id)] {
       _id, title, "slug": slug.current,
       instructor->${instructorProjection}, category->${categoryProjection},
       modules[]{_key, title, summary, lessons[]->{_id, title, "slug": slug.current}}
