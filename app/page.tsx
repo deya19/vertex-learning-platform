@@ -4,45 +4,13 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import Image from "next/image";
 import Link from "next/link";
+import { getCourses } from "../sanity/lib/data";
+import { urlFor } from "../sanity/lib/image";
+import type { Course } from "../sanity/lib/data";
 
 type IconName = "bell" | "search" | "arrow" | "level" | "clock" | "modules" | "star";
-
-type Course = {
-  title: string;
-  description: string;
-  level: string;
-  duration: string;
-  modules: string;
-  mark: "next" | "docker" | "typescript";
-};
-
-const courses: Course[] = [
-  {
-    title: "Next.js for Production",
-    description: "Build scalable, high-performance web applications with Next.js.",
-    level: "Intermediate",
-    duration: "18h 24m",
-    modules: "12 modules",
-    mark: "next",
-  },
-  {
-    title: "Docker Essentials",
-    description: "Containerize applications and streamline your development workflow.",
-    level: "Beginner",
-    duration: "10h 12m",
-    modules: "8 modules",
-    mark: "docker",
-  },
-  {
-    title: "TypeScript Deep Dive",
-    description: "Go beyond the basics and write safer, more expressive code.",
-    level: "Intermediate",
-    duration: "14h 36m",
-    modules: "10 modules",
-    mark: "typescript",
-  },
-];
 
 function Icon({ name }: { name: IconName }) {
   if (name === "arrow") {
@@ -72,33 +40,34 @@ function Icon({ name }: { name: IconName }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h10l3 3v13H6V4Zm10 0v4h3M9 12h6m-6 3h6" /></svg>;
 }
 
-function CourseMark({ mark }: { mark: Course["mark"] }) {
-  if (mark === "next") return <div className="course-mark mark-next">N</div>;
-  if (mark === "typescript") return <div className="course-mark mark-typescript">TS</div>;
-
-  return (
-    <div className="course-mark mark-docker" aria-label="Docker">
-      <span className="docker-whale"><i /><i /><i /><i /><i /><i /><b /></span>
-    </div>
-  );
+function formatDuration(seconds: number) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours ? `${hours}h ${minutes.toString().padStart(2, "0")}m` : `${minutes}m`;
 }
 
 function CourseCard({ course }: { course: Course }) {
+  const duration = course.modules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.duration, 0);
+  const coverImage = course.coverImage ? urlFor(course.coverImage).width(240).height(160).fit("crop").url() : null;
+
   return (
-    <article className="home-course-card">
-      <CourseMark mark={course.mark} />
+    <Link className="home-course-card" href={`/courses/${course.slug}`}>
+      <div className="course-card-art">{coverImage ? <Image src={coverImage} alt={course.coverImage?.alt || `${course.title} cover`} fill sizes="(max-width: 700px) 100vw, 30vw" /> : <span>V</span>}</div>
       <h3>{course.title}</h3>
-      <p>{course.description}</p>
+      <p>{course.summary}</p>
       <div className="course-meta">
-        <span><Icon name="level" />{course.level}</span>
-        <span><Icon name="clock" />{course.duration}</span>
-        <span><Icon name="modules" />{course.modules}</span>
+        <span><Icon name="level" />{course.level[0].toUpperCase() + course.level.slice(1)}</span>
+        <span><Icon name="clock" />{formatDuration(duration)}</span>
+        <span><Icon name="modules" />{course.modules.length} modules</span>
       </div>
-    </article>
+    </Link>
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const courses = await getCourses();
+  const featuredCourses = courses.slice(-3);
+
   return (
     <main className="home-shell">
       <header className="home-header">
@@ -146,7 +115,7 @@ export default function Home() {
           <Link href="/courses">View all courses <Icon name="arrow" /></Link>
         </div>
         <div className="course-grid">
-          {courses.map((course) => <CourseCard course={course} key={course.title} />)}
+          {featuredCourses.map((course) => <CourseCard course={course} key={course.title} />)}
         </div>
         <div className="weekly-note"><span /><div><Icon name="star" /> <span>New courses and lessons added every week.</span></div><span /></div>
         <div className="growth-bars" aria-hidden="true">
