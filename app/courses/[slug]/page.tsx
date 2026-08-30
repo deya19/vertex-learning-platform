@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getCourseBySlug } from "../../../sanity/lib/data";
 import { urlFor } from "../../../sanity/lib/image";
 import { CourseContent } from "./course-content";
+import { CourseActions, CourseSidebarActions } from "./course-actions";
 
 function Icon({ name }: { name: "bell" | "level" | "clock" | "modules" | "students" | "bookmark" | "arrow" }) {
   const paths = {
@@ -70,14 +71,18 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             <h1 id="course-title">{course.title}</h1>
             <p className="course-summary">{course.summary}</p>
             <div className="course-meta-detail"><span><Icon name="level" />{course.level[0].toUpperCase() + course.level.slice(1)}</span><span><Icon name="clock" />{formatDuration(totalDuration)}</span><span><Icon name="modules" />{course.modules.length} modules</span><span><Icon name="students" />{course.studentCount?.toLocaleString() ?? 0} students</span></div>
-            <div className="course-actions"><Link className="course-primary-action" href={lessons[0] ? `/lessons/${lessons[0].slug}` : "#"}>Continue Learning <Icon name="arrow" /></Link><button className="course-bookmark" type="button"><Icon name="bookmark" />Bookmark</button></div>
+            <CourseActions
+              firstLessonSlug={lessons[0]?.slug}
+              courseSlug={course.slug}
+              courseTitle={course.title}
+            />
           </div>
         </section>
 
         {course.learningOutcomes?.length ? <section className="learning-panel" aria-labelledby="learning-title"><h2 id="learning-title">What you’ll learn</h2><div className="outcome-grid">{course.learningOutcomes.map((outcome) => <article className="outcome-card" key={outcome._key}><OutcomeIcon icon={outcome.icon} /><div><h3>{outcome.title}</h3><p>{outcome.description}</p></div></article>)}</div></section> : null}
         <CourseContent modules={course.modules} />
       </div>
-      <aside className="progress-bar" aria-label="Your progress"><div><span>Your Progress</span><strong>0% complete</strong></div><div className="progress-track"><span /></div><Link className="course-primary-action" href={lessons[0] ? `/lessons/${lessons[0].slug}` : "#"}>Continue Learning <Icon name="arrow" /></Link></aside>
+      <aside className="progress-bar" aria-label="Your progress"><div><span>Your Progress</span><strong>0% complete</strong></div><div className="progress-track"><span /></div><CourseSidebarActions firstLessonSlug={lessons[0]?.slug} courseSlug={course.slug} courseTitle={course.title} /></aside>
     </main>
   );
 }

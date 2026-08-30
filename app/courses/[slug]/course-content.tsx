@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 type Lesson = {
   _id: string;
@@ -49,7 +50,20 @@ export function CourseContent({ modules }: { modules: CourseModule[] }) {
             </div>
             <div className="lesson-list">
               {module.lessons.map((lesson, lessonIndex) => (
-                  <Link className="course-lesson" href={`/lessons/${lesson.slug}`} key={lesson._id}>
+                  <Link
+                    className="course-lesson"
+                    href={`/lessons/${lesson.slug}`}
+                    key={lesson._id}
+                    onClick={() =>
+                      posthog.capture("lesson_clicked", {
+                        lesson_slug: lesson.slug,
+                        lesson_title: lesson.title,
+                        lesson_index: `${moduleIndex + 1}.${lessonIndex + 1}`,
+                        module_title: module.title,
+                        is_free_preview: lesson.isFreePreview ?? false,
+                      })
+                    }
+                  >
                     <span className="lesson-index">{moduleIndex + 1}.{lessonIndex + 1}</span>
                     <span className="lesson-copy">
                       <strong>{lesson.title}</strong>
@@ -64,7 +78,20 @@ export function CourseContent({ modules }: { modules: CourseModule[] }) {
         ))}
       </div>
       {modules.length > 6 && (
-        <button className="show-modules-button" type="button" onClick={() => setShowAll((current) => !current)} aria-expanded={showAll}>
+        <button
+          className="show-modules-button"
+          type="button"
+          onClick={() => {
+            const next = !showAll;
+            setShowAll(next);
+            if (next) {
+              posthog.capture("course_module_expanded", {
+                total_modules: modules.length,
+              });
+            }
+          }}
+          aria-expanded={showAll}
+        >
           {showAll ? "Show fewer modules" : `Show all ${modules.length} modules`}
           <span aria-hidden="true">⌄</span>
         </button>
