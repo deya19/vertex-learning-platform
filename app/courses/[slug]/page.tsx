@@ -1,16 +1,15 @@
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SiteHeader } from "@/components/SiteHeader";
 import { getCourseBySlug } from "../../../sanity/lib/data";
 import { urlFor } from "../../../sanity/lib/image";
 import { CourseContent } from "./course-content";
 import { CourseActions, CourseSidebarActions } from "./course-actions";
 
-function Icon({ name }: { name: "bell" | "level" | "clock" | "modules" | "students" | "bookmark" | "arrow" }) {
+function Icon({ name }: { name: "level" | "clock" | "modules" | "students" | "bookmark" | "arrow" }) {
   const paths = {
-    bell: <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" />,
     level: <path d="M4 19v-3m5 3V9m5 10V5m5 14v-7" />,
     clock: <><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /></>,
     modules: <path d="M6 4h10l3 3v13H6V4Zm10 0v4h3M9 12h6m-6 3h6" />,
@@ -56,11 +55,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
   return (
     <main className="course-shell">
-      <header className="course-header">
-        <Link className="home-brand" href="/" aria-label="Vertex home"><span className="vertex-logo" aria-hidden="true">V</span><span>Vertex</span></Link>
-        <nav className="home-nav" aria-label="Main navigation"><Link href="/courses">Courses</Link><Link href="/my-learning">My Learning</Link></nav>
-        <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span><Show when="signed-out"><div className="auth-actions"><SignInButton mode="modal"><button className="auth-link" type="button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="auth-signup" type="button">Sign up</button></SignUpButton></div></Show><Show when="signed-in"><UserButton /></Show></div>
-      </header>
+      <SiteHeader className="course-header" />
 
       <div className="course-page">
         <nav className="course-breadcrumbs" aria-label="Breadcrumb"><Link href="/courses">All Courses</Link><span aria-hidden="true">›</span><span>{course.title}</span></nav>
