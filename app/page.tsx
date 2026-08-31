@@ -1,16 +1,11 @@
-import {
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
 import { getCourses } from "../sanity/lib/data";
 import { urlFor } from "../sanity/lib/image";
 import type { Course } from "../sanity/lib/data";
 
-type IconName = "bell" | "search" | "arrow" | "level" | "clock" | "modules" | "star";
+type IconName = "search" | "arrow" | "level" | "clock" | "modules" | "star";
 
 function Icon({ name }: { name: IconName }) {
   if (name === "arrow") {
@@ -23,10 +18,6 @@ function Icon({ name }: { name: IconName }) {
 
   if (name === "search") {
     return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2" /><path d="m16.2 16.2 5 5" /></svg>;
-  }
-
-  if (name === "bell") {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" /></svg>;
   }
 
   if (name === "level") {
@@ -70,32 +61,7 @@ export default async function Home() {
 
   return (
     <main className="home-shell">
-      <header className="home-header">
-        <Link className="home-brand" href="/" aria-label="Vertex home">
-          <span className="vertex-logo" aria-hidden="true">V</span>
-          <span>Vertex</span>
-        </Link>
-        <nav className="home-nav" aria-label="Main navigation">
-          <Link href="/courses">Courses</Link>
-          <Link href="/my-learning">My Learning</Link>
-        </nav>
-        <div className="home-actions">
-          <span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>
-          <Show when="signed-out">
-            <div className="auth-actions">
-              <SignInButton mode="modal">
-                <button className="auth-link" type="button">Sign in</button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="auth-signup" type="button">Sign up</button>
-              </SignUpButton>
-            </div>
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="hero" aria-labelledby="hero-title">
         <div className="eyebrow">Intelligent learning</div>
