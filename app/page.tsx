@@ -1,9 +1,9 @@
 import {
-  Show,
   SignInButton,
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
 import { getCourses } from "../sanity/lib/data";
@@ -65,6 +65,7 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 export default async function Home() {
+  const { isAuthenticated } = await auth();
   const courses = await getCourses();
   const featuredCourses = courses.slice(-3);
 
@@ -81,7 +82,9 @@ export default async function Home() {
         </nav>
         <div className="home-actions">
           <span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>
-          <Show when="signed-out">
+          {isAuthenticated ? (
+            <UserButton />
+          ) : (
             <div className="auth-actions">
               <SignInButton mode="modal">
                 <button className="auth-link" type="button">Sign in</button>
@@ -90,10 +93,7 @@ export default async function Home() {
                 <button className="auth-signup" type="button">Sign up</button>
               </SignUpButton>
             </div>
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
+          )}
         </div>
       </header>
 
@@ -102,11 +102,11 @@ export default async function Home() {
         <h1 id="hero-title">Search your learning<br />in plain English.</h1>
         <p className="hero-copy">Vertex understands what you want to learn and<br className="desktop-break" /> finds the exact lessons across all your courses.</p>
         <Link className="primary-cta" href="/courses">Explore Courses <Icon name="arrow" /></Link>
-        <div className="search-box" role="search">
+        <Link className="search-box" role="search" href="/search">
           <Icon name="search" />
           <span>Ask anything about your learning...</span>
           <kbd>⌘ K</kbd>
-        </div>
+        </Link>
       </section>
 
       <section className="courses-section" aria-labelledby="courses-title">

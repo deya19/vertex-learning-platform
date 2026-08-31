@@ -58,8 +58,8 @@ export type Course = {
 export type Lesson = LessonCard & {
   notes?: unknown[]
   resources?: { _key: string; type: string; title: string; description?: string; url: string }[]
-  course?: (Pick<Course, '_id' | 'title' | 'slug' | 'instructor' | 'category'> & {
-    modules: { _key: string; title: string; summary: string; lessons: Pick<LessonCard, '_id' | 'title' | 'slug'>[] }[]
+  course?: (Pick<Course, '_id' | 'title' | 'slug' | 'coverImage' | 'instructor' | 'category'> & {
+    modules: { _key: string; title: string; summary: string; lessons: Pick<LessonCard, '_id' | 'title' | 'slug' | 'duration'>[] }[]
   })[]
 }
 
