@@ -35,6 +35,8 @@ export type LessonCard = {
   duration: number
   isFreePreview?: boolean
   studentCount?: number
+  description?: string
+  overview?: string
   keyPoints?: string[]
   proTip?: string
 }

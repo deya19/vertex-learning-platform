@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import {FormEvent, useEffect, useMemo, useState} from 'react'
+import {FormEvent, useEffect, useMemo, useRef, useState} from 'react'
 
 import posthog from 'posthog-js'
 
@@ -75,22 +75,42 @@ export function SearchResults({initialQuery}: {initialQuery: string}) {
   const [sort, setSort] = useState<'relevant' | 'lessons' | 'videos'>('relevant')
   const [loading, setLoading] = useState(Boolean(initialQuery.trim()))
   const [error, setError] = useState('')
+  const activeRequestId = useRef(0)
+  const activeController = useRef<AbortController | null>(null)
 
   const runSearch = async (value: string) => {
+    const requestId = ++activeRequestId.current
+    activeController.current?.abort()
+    activeController.current = null
     const cleanQuery = value.trim()
-    if (!cleanQuery) { setData(null); return }
+    if (!cleanQuery) {
+      setData(null)
+      setError('')
+      setLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    activeController.current = controller
     setLoading(true); setError('')
     window.history.replaceState(null, '', `/search?q=${encodeURIComponent(cleanQuery)}`)
     try {
-      const response = await fetch('/api/search', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({query: cleanQuery})})
+      const response = await fetch('/api/search', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({query: cleanQuery}), signal: controller.signal})
       const body = await response.json()
+      if (requestId !== activeRequestId.current) return
       if (!response.ok) throw new Error(body.error || 'Search failed')
       setData(body)
       posthog.capture('search_performed', {query: cleanQuery, result_count: body.total})
     } catch (requestError) {
+      if (requestId !== activeRequestId.current || (requestError instanceof DOMException && requestError.name === 'AbortError')) return
       setError(requestError instanceof Error ? requestError.message : 'Search failed')
       setData(null)
-    } finally { setLoading(false) }
+    } finally {
+      if (requestId === activeRequestId.current) {
+        activeController.current = null
+        setLoading(false)
+      }
+    }
   }
 
   useEffect(() => {
@@ -98,6 +118,11 @@ export function SearchResults({initialQuery}: {initialQuery: string}) {
     const timer = window.setTimeout(() => { void runSearch(initialQuery) }, 0)
     return () => window.clearTimeout(timer)
   }, [initialQuery])
+
+  useEffect(() => () => {
+    activeRequestId.current += 1
+    activeController.current?.abort()
+  }, [])
 
   const visibleResults = useMemo(() => data?.results.filter((result) => sort === 'relevant' || result.kind === (sort === 'videos' ? 'video' : 'lesson')) ?? [], [data, sort])
   const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void runSearch(query) }

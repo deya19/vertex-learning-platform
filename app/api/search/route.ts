@@ -2,9 +2,62 @@ import {openai} from '@ai-sdk/openai'
 import {Output, generateText, stepCountIs} from 'ai'
 import {z} from 'zod'
 
+import {serverClient} from '../../../sanity/lib/client'
 import {createSearchContext} from '../../../sanity/lib/search-context'
 
 export const runtime = 'nodejs'
+
+function positiveEnvInt(name: string, fallback: number) {
+  const value = Number.parseInt(process.env[name] || '', 10)
+  return Number.isFinite(value) && value > 0 ? value : fallback
+}
+
+const SEARCH_RATE_LIMIT_MAX = positiveEnvInt('SEARCH_RATE_LIMIT_MAX', 20)
+const SEARCH_RATE_LIMIT_WINDOW_MS = positiveEnvInt('SEARCH_RATE_LIMIT_WINDOW_MS', 60000)
+const searchRateLimits = new Map<string, {count: number; resetAt: number}>()
+
+const SEARCH_RESULT_LOOKUP_QUERY = /* groq */ `
+  *[_type == "lesson" && slug.current in $lessonSlugs] {
+    _id, title, "lessonSlug": slug.current, description,
+    duration, keyPoints, videoUrl,
+    "posterUrl": coalesce(poster, thumbnail).asset->url,
+    "courses": *[_type == "course" && references(^._id)] {
+      _id, title, "courseSlug": slug.current,
+      modules[]{title, lessons[]->{_id}}
+    }
+  }
+`
+
+type SearchLesson = {
+  _id: string
+  title: string
+  lessonSlug: string
+  description?: string
+  duration: number
+  keyPoints?: string[]
+  videoUrl: string
+  posterUrl?: string
+  courses: { _id: string; title: string; courseSlug: string; modules: {title: string; lessons: {_id: string}[]}[] }[]
+}
+
+function getRequestKey(request: Request) {
+  return request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
+}
+
+function isRateLimited(request: Request) {
+  const now = Date.now()
+  const key = getRequestKey(request)
+  const current = searchRateLimits.get(key)
+  if (!current || current.resetAt <= now) {
+    searchRateLimits.set(key, {count: 1, resetAt: now + SEARCH_RATE_LIMIT_WINDOW_MS})
+    if (searchRateLimits.size > 10000) {
+      for (const [entryKey, entry] of searchRateLimits) if (entry.resetAt <= now) searchRateLimits.delete(entryKey)
+    }
+    return null
+  }
+  current.count += 1
+  return current.count > SEARCH_RATE_LIMIT_MAX ? Math.ceil((current.resetAt - now) / 1000) : null
+}
 
 const searchRequestSchema = z.object({query: z.string().trim().min(2).max(200)})
 
@@ -55,10 +108,20 @@ function isSanityAssetUrl(value: string | null) {
 }
 
 export async function POST(request: Request) {
+  const retryAfter = isRateLimited(request)
+  if (retryAfter !== null) return Response.json({error: 'Too many searches. Please try again later.'}, {status: 429, headers: {'Retry-After': String(retryAfter)}})
+
   let mcpClient: Awaited<ReturnType<typeof createSearchContext>>['client'] | null = null
 
   try {
-    const input = searchRequestSchema.parse(await request.json())
+    let requestBody: unknown
+    try {
+      requestBody = await request.json()
+    } catch (error) {
+      if (error instanceof SyntaxError) return Response.json({error: 'Request body must be valid JSON.'}, {status: 400})
+      throw error
+    }
+    const input = searchRequestSchema.parse(requestBody)
     const missingConfig = ['OPENAI_API_KEY', 'SANITY_API_READ_TOKEN'].filter((key) => !process.env[key])
     if (missingConfig.length) {
       return Response.json({error: `Search is not configured. Missing: ${missingConfig.join(', ')}`}, {status: 503})
@@ -80,22 +143,32 @@ export async function POST(request: Request) {
     })
 
     const output = result.output ?? {total: 0, courseCount: 0, results: []}
+    const lessons = await serverClient.fetch<SearchLesson[]>(SEARCH_RESULT_LOOKUP_QUERY, {lessonSlugs: output.results.map((item) => item.lessonSlug)})
+    const lessonsBySlug = new Map(lessons.map((lesson) => [lesson.lessonSlug, lesson]))
     const results = output.results.reduce<SearchApiResult[]>((items, item) => {
+      const lesson = lessonsBySlug.get(item.lessonSlug)
+      const course = lesson?.courses.find((candidate) => candidate.courseSlug === item.courseSlug)
+      if (!lesson || !course) return items
+      const moduleIndex = course.modules.findIndex((candidate) => candidate.lessons.some((courseLesson) => courseLesson._id === lesson._id))
+      const courseModule = moduleIndex >= 0 ? course.modules[moduleIndex] : null
+      const lessonIndex = courseModule?.lessons.findIndex((courseLesson) => courseLesson._id === lesson._id) ?? -1
+      if (!courseModule || lessonIndex < 0) return items
+
       const common = {
-        lessonSlug: item.lessonSlug,
-        lessonTitle: item.lessonTitle,
-        courseSlug: item.courseSlug,
-        courseTitle: item.courseTitle,
-        moduleTitle: item.moduleTitle,
-        moduleIndex: item.moduleIndex,
-        lessonIndex: item.lessonIndex,
-        description: item.description,
+        lessonSlug: lesson.lessonSlug,
+        lessonTitle: lesson.title,
+        courseSlug: course.courseSlug,
+        courseTitle: course.title,
+        moduleTitle: courseModule.title,
+        moduleIndex,
+        lessonIndex,
+        description: lesson.description || '',
       }
 
       if (item.kind === 'lesson') {
-        items.push({...common, kind: 'lesson', keyPoints: item.keyPoints, href: `/lessons/${encodeURIComponent(item.lessonSlug)}`})
-      } else if (item.matchedSeconds !== null && item.matchedLabel !== null && item.duration !== null) {
-        items.push({...common, kind: 'video', matchedSeconds: item.matchedSeconds, matchedLabel: item.matchedLabel, duration: item.duration, posterUrl: isSanityAssetUrl(item.posterUrl), href: `/lessons/${encodeURIComponent(item.lessonSlug)}?start=${Math.floor(item.matchedSeconds)}`})
+        items.push({...common, kind: 'lesson', keyPoints: lesson.keyPoints || [], href: `/lessons/${encodeURIComponent(lesson.lessonSlug)}`})
+      } else if (item.matchedSeconds !== null && item.matchedLabel !== null && item.matchedSeconds <= lesson.duration) {
+        items.push({...common, kind: 'video', matchedSeconds: item.matchedSeconds, matchedLabel: item.matchedLabel, duration: lesson.duration, posterUrl: isSanityAssetUrl(lesson.posterUrl || null), href: `/lessons/${encodeURIComponent(lesson.lessonSlug)}?start=${Math.floor(item.matchedSeconds)}`})
       }
 
       return items

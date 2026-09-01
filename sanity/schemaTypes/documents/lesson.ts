@@ -12,6 +12,8 @@ export const lesson = defineType({
     defineField({name: 'duration', title: 'Duration (seconds)', type: 'number', validation: (rule) => rule.integer().positive().required()}),
     defineField({name: 'isFreePreview', title: 'Free preview', type: 'boolean', initialValue: false}),
     defineField({name: 'studentCount', title: 'Student count', type: 'number', validation: (rule) => rule.integer().min(0)}),
+    defineField({name: 'description', title: 'Description', type: 'text', rows: 3}),
+    defineField({name: 'overview', title: 'Overview', type: 'text', rows: 5}),
     defineField({
       name: 'notes',
       title: 'Notes',
