@@ -7,7 +7,7 @@ const imageProjection = `{
 
 const instructorProjection = `{_id, name, "slug": slug.current, photo${imageProjection}, expertise, bio}`
 const categoryProjection = `{_id, title, "slug": slug.current, description}`
-const lessonCardProjection = `{_id, title, "slug": slug.current, videoUrl, poster${imageProjection}, duration, isFreePreview, studentCount, keyPoints, proTip}`
+const lessonCardProjection = `{_id, title, "slug": slug.current, videoUrl, "poster": coalesce(poster, thumbnail)${imageProjection}, duration, "isFreePreview": coalesce(isFreePreview, freePreview), studentCount, description, overview, keyPoints, proTip}`
 
 export const COURSES_QUERY = defineQuery(/* groq */ `
   *[_type == "course" && defined(slug.current)] | order(isPopular desc, title asc) {
@@ -31,12 +31,12 @@ export const COURSE_BY_SLUG_QUERY = defineQuery(/* groq */ `
 
 export const LESSON_BY_SLUG_QUERY = defineQuery(/* groq */ `
   *[_type == "lesson" && slug.current == $slug][0] {
-    _id, title, "slug": slug.current, videoUrl, poster${imageProjection}, duration, isFreePreview, studentCount,
+    _id, title, "slug": slug.current, videoUrl, "poster": coalesce(poster, thumbnail)${imageProjection}, duration, "isFreePreview": coalesce(isFreePreview, freePreview), studentCount, description, overview,
     notes, keyPoints, proTip, resources[]{_key, type, title, description, url},
     "course": *[_type == "course" && references(^._id)] {
-      _id, title, "slug": slug.current,
+      _id, title, "slug": slug.current, coverImage${imageProjection},
       instructor->${instructorProjection}, category->${categoryProjection},
-      modules[]{_key, title, summary, lessons[]->{_id, title, "slug": slug.current}}
+      modules[]{_key, title, summary, lessons[]->{_id, title, "slug": slug.current, duration}}
     }
   }
 `)

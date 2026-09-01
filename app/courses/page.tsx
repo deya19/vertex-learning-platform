@@ -1,4 +1,5 @@
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
 import { getCourses } from "../../sanity/lib/data";
@@ -44,6 +45,7 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 export default async function CoursesPage() {
+  const { isAuthenticated } = await auth();
   const courses = await getCourses();
 
   return (
@@ -51,7 +53,7 @@ export default async function CoursesPage() {
       <header className="home-header">
         <Link className="home-brand" href="/" aria-label="Vertex home"><span className="vertex-logo" aria-hidden="true">V</span><span>Vertex</span></Link>
         <nav className="home-nav" aria-label="Main navigation"><Link href="/courses">Courses</Link><Link href="/my-learning">My Learning</Link></nav>
-        <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span><Show when="signed-out"><div className="auth-actions"><SignInButton mode="modal"><button className="auth-link" type="button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="auth-signup" type="button">Sign up</button></SignUpButton></div></Show><Show when="signed-in"><UserButton /></Show></div>
+        <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>{isAuthenticated ? <UserButton /> : <div className="auth-actions"><SignInButton mode="modal"><button className="auth-link" type="button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="auth-signup" type="button">Sign up</button></SignUpButton></div>}</div>
       </header>
       <section className="all-courses-content" aria-labelledby="all-courses-title">
         <div className="all-courses-heading"><div><p className="eyebrow">Learn at your pace</p><h1 id="all-courses-title">All Courses</h1><p>Explore the full Vertex curriculum and find your next skill to build.</p></div><Link href="/" className="all-courses-back">Back home <Icon name="arrow" /></Link></div>
