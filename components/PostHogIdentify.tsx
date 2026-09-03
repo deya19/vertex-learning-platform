@@ -21,10 +21,7 @@ export function PostHogIdentify() {
 
     if (isSignedIn && user) {
       wasSignedIn.current = true;
-      posthog.identify(user.id, {
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName,
-      });
+      posthog.identify(user.id);
     } else if (wasSignedIn.current) {
       // Only reset on explicit sign-out, not on an anonymous page load.
       posthog.reset();

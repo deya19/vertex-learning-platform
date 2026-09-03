@@ -26,7 +26,7 @@ function formatDuration(seconds: number) {
   return `${minutes}m`;
 }
 
-export function CourseContent({ modules }: { modules: CourseModule[] }) {
+export function CourseContent({ courseSlug, modules }: { courseSlug: string; modules: CourseModule[] }) {
   const [showAll, setShowAll] = useState(false);
   const visibleModules = showAll ? modules : modules.slice(0, 6);
   return (
@@ -55,11 +55,11 @@ export function CourseContent({ modules }: { modules: CourseModule[] }) {
                     href={`/lessons/${lesson.slug}`}
                     key={lesson._id}
                     onClick={() =>
-                      posthog.capture("lesson_clicked", {
+                      posthog.capture("course:lesson_open", {
+                        course_slug: courseSlug,
                         lesson_slug: lesson.slug,
-                        lesson_title: lesson.title,
-                        lesson_index: `${moduleIndex + 1}.${lessonIndex + 1}`,
-                        module_title: module.title,
+                        module_index: moduleIndex + 1,
+                        lesson_index: lessonIndex + 1,
                         is_free_preview: lesson.isFreePreview ?? false,
                       })
                     }
@@ -85,8 +85,10 @@ export function CourseContent({ modules }: { modules: CourseModule[] }) {
             const next = !showAll;
             setShowAll(next);
             if (next) {
-              posthog.capture("course_module_expanded", {
-                total_modules: modules.length,
+              posthog.capture("course:module_expand", {
+                course_slug: courseSlug,
+                module_count: modules.length,
+                source: "course_content",
               });
             }
           }}

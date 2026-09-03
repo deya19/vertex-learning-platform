@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useState } from "react";
 
 type Lesson = {
@@ -18,8 +19,10 @@ type Module = {
 
 type LessonModulesProps = {
   modules: Module[];
+  courseSlug: string;
   currentModuleIndex: number;
   currentLessonId: string;
+  currentLessonSlug: string;
 };
 
 function formatDuration(seconds: number) {
@@ -28,7 +31,7 @@ function formatDuration(seconds: number) {
   return hours ? `${hours}h ${minutes.toString().padStart(2, "0")}m` : `${minutes}m`;
 }
 
-export function LessonModules({ modules, currentModuleIndex, currentLessonId }: LessonModulesProps) {
+export function LessonModules({ modules, courseSlug, currentModuleIndex, currentLessonId, currentLessonSlug }: LessonModulesProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(currentModuleIndex);
 
   return (
@@ -42,7 +45,16 @@ export function LessonModules({ modules, currentModuleIndex, currentLessonId }: 
               type="button"
               aria-expanded={isExpanded}
               aria-controls={`module-lessons-${module._key}`}
-              onClick={() => setExpandedIndex(isExpanded ? null : moduleIndex)}
+              onClick={() => {
+                setExpandedIndex(isExpanded ? null : moduleIndex);
+                if (!isExpanded) {
+                  posthog.capture("lesson:module_expand", {
+                    course_slug: courseSlug,
+                    lesson_slug: currentLessonSlug,
+                    module_index: moduleIndex + 1,
+                  });
+                }
+              }}
             >
               <span className={moduleIndex === currentModuleIndex ? "module-number selected" : "module-number"}>{moduleIndex + 1}</span>
               <strong>{module.title}</strong>
@@ -51,7 +63,20 @@ export function LessonModules({ modules, currentModuleIndex, currentLessonId }: 
             {isExpanded && (
               <div className="module-lessons" id={`module-lessons-${module._key}`}>
                 {module.lessons.map((lesson) => (
-                  <Link className={lesson._id === currentLessonId ? "module-lesson current" : "module-lesson"} href={`/lessons/${lesson.slug}`} key={lesson._id}>
+                  <Link
+                    className={lesson._id === currentLessonId ? "module-lesson current" : "module-lesson"}
+                    href={`/lessons/${lesson.slug}`}
+                    key={lesson._id}
+                    onClick={() => {
+                      if (lesson._id === currentLessonId) return;
+                      posthog.capture("lesson:navigation_click", {
+                        course_slug: courseSlug,
+                        lesson_slug: currentLessonSlug,
+                        target_lesson_slug: lesson.slug,
+                        navigation_source: "module_list",
+                      });
+                    }}
+                  >
                     <span className="lesson-dot" />
                     <span>
                       <b>{lesson.title}</b>

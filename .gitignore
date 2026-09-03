@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated video ingestion artifacts
+/scripts/video-sources/
+/scripts/video-acquisition-report.json
+/scripts/video-documents.ndjson
+/scripts/video-ingestion-report.json

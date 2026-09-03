@@ -22,7 +22,6 @@ function ArrowIcon() {
 type CourseActionsProps = {
   firstLessonSlug: string | undefined;
   courseSlug: string;
-  courseTitle: string;
 };
 
 /**
@@ -30,7 +29,7 @@ type CourseActionsProps = {
  * on the course detail page. Extracted from the server component so that
  * click events can be captured with PostHog.
  */
-export function CourseActions({ firstLessonSlug, courseSlug, courseTitle }: CourseActionsProps) {
+export function CourseActions({ firstLessonSlug, courseSlug }: CourseActionsProps) {
   const href = firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#";
 
   return (
@@ -39,10 +38,10 @@ export function CourseActions({ firstLessonSlug, courseSlug, courseTitle }: Cour
         className="course-primary-action"
         href={href}
         onClick={() =>
-          posthog.capture("continue_learning_clicked", {
+          posthog.capture("course:continue_click", {
             course_slug: courseSlug,
-            course_title: courseTitle,
-            first_lesson_slug: firstLessonSlug ?? null,
+            lesson_slug: firstLessonSlug ?? null,
+            source: "hero",
           })
         }
       >
@@ -52,9 +51,8 @@ export function CourseActions({ firstLessonSlug, courseSlug, courseTitle }: Cour
         className="course-bookmark"
         type="button"
         onClick={() =>
-          posthog.capture("course_bookmarked", {
+          posthog.capture("course:bookmark_click", {
             course_slug: courseSlug,
-            course_title: courseTitle,
           })
         }
       >
@@ -68,13 +66,12 @@ export function CourseActions({ firstLessonSlug, courseSlug, courseTitle }: Cour
 type CourseSidebarActionsProps = {
   firstLessonSlug: string | undefined;
   courseSlug: string;
-  courseTitle: string;
 };
 
 /**
  * Sidebar version of the Continue Learning CTA (used in the progress aside).
  */
-export function CourseSidebarActions({ firstLessonSlug, courseSlug, courseTitle }: CourseSidebarActionsProps) {
+export function CourseSidebarActions({ firstLessonSlug, courseSlug }: CourseSidebarActionsProps) {
   const href = firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#";
 
   return (
@@ -82,10 +79,9 @@ export function CourseSidebarActions({ firstLessonSlug, courseSlug, courseTitle 
       className="course-primary-action"
       href={href}
       onClick={() =>
-        posthog.capture("continue_learning_clicked", {
+        posthog.capture("course:continue_click", {
           course_slug: courseSlug,
-          course_title: courseTitle,
-          first_lesson_slug: firstLessonSlug ?? null,
+          lesson_slug: firstLessonSlug ?? null,
           source: "sidebar",
         })
       }
