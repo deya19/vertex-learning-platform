@@ -394,6 +394,16 @@
         "title": "Student count"
       },
       {
+        "rows": 3,
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "rows": 5,
+        "name": "overview",
+        "type": "text"
+      },
+      {
         "of": [
           {
             "lists": [
@@ -529,6 +539,137 @@
     ],
     "name": "lesson",
     "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "uri",
+                "constraint": {
+                  "options": {
+                    "scheme": [
+                      "/^http$/",
+                      "/^https$/"
+                    ],
+                    "allowRelative": false,
+                    "relativeOnly": false,
+                    "allowCredentials": false
+                  }
+                }
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "url",
+        "type": "url",
+        "title": "Video URL"
+      },
+      {
+        "of": [
+          {
+            "fields": [
+              {
+                "validation": [
+                  {
+                    "level": "error",
+                    "rules": [
+                      {
+                        "flag": "min",
+                        "constraint": 0
+                      },
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ]
+                  }
+                ],
+                "name": "startSeconds",
+                "type": "number",
+                "title": "Start (seconds)"
+              },
+              {
+                "validation": [
+                  {
+                    "level": "error",
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ]
+                  }
+                ],
+                "name": "label",
+                "type": "string"
+              }
+            ],
+            "type": "object"
+          }
+        ],
+        "name": "chapters",
+        "type": "array"
+      },
+      {
+        "of": [
+          {
+            "fields": [
+              {
+                "validation": [
+                  {
+                    "level": "error",
+                    "rules": [
+                      {
+                        "flag": "min",
+                        "constraint": 0
+                      },
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ]
+                  }
+                ],
+                "name": "startSeconds",
+                "type": "number",
+                "title": "Start (seconds)"
+              },
+              {
+                "rows": 3,
+                "validation": [
+                  {
+                    "level": "error",
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ]
+                  }
+                ],
+                "name": "text",
+                "type": "text"
+              }
+            ],
+            "type": "object"
+          }
+        ],
+        "name": "chunks",
+        "type": "array",
+        "title": "Transcript chunks"
+      }
+    ],
+    "name": "video",
+    "type": "document",
+    "title": "Video intelligence"
   },
   {
     "fields": [

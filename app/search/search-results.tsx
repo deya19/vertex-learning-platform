@@ -1,9 +1,10 @@
 'use client'
 
-import {SignInButton, SignUpButton, UserButton, useAuth} from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
 import {FormEvent, useEffect, useMemo, useRef, useState} from 'react'
+
+import {HeaderAuth} from '../../components/HeaderAuth'
 
 import posthog from 'posthog-js'
 
@@ -118,7 +119,6 @@ function SearchSkeleton() {
 }
 
 export function SearchResults({initialQuery}: {initialQuery: string}) {
-  const {isSignedIn} = useAuth()
   const [query, setQuery] = useState(initialQuery)
   const [data, setData] = useState<SearchResponse | null>(null)
   const [sort, setSort] = useState<'relevant' | 'lessons' | 'videos'>('relevant')
@@ -187,7 +187,7 @@ export function SearchResults({initialQuery}: {initialQuery: string}) {
     <header className="home-header">
       <Link className="home-brand" href="/" aria-label="Vertex home"><span className="vertex-logo" aria-hidden="true">V</span><span>Vertex</span></Link>
       <nav className="home-nav" aria-label="Main navigation"><Link className="active" href="/courses">Courses</Link><Link href="/my-learning">My Learning</Link></nav>
-      <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>{isSignedIn ? <UserButton /> : <div className="auth-actions"><SignInButton mode="modal"><button className="auth-link" type="button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="auth-signup" type="button">Sign up</button></SignUpButton></div>}</div>
+      <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span><HeaderAuth /></div>
     </header>
     <section className="search-page-content" aria-labelledby="search-title">
       <div className="search-heading"><p className="eyebrow">Search results</p><h1 id="search-title">Results for <span>{hasQuery ? `“${query}”` : 'your learning'}</span></h1>{data && !loading ? <p className="search-count">Found {data.total} results across {data.courseCount} courses</p> : null}</div>

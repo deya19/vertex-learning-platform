@@ -19,6 +19,7 @@ type YouTubePlayer = {
   destroy: () => void;
   getCurrentTime: () => number;
   getDuration: () => number;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
 };
 
 type YouTubeEvent = { data: number };
@@ -28,7 +29,10 @@ declare global {
     YT?: {
       Player: new (
         element: HTMLIFrameElement,
-        options: { events: { onReady: () => void; onStateChange: (event: YouTubeEvent) => void } },
+        options: {
+          playerVars?: Record<string, number | string>;
+          events: { onReady: () => void; onStateChange: (event: YouTubeEvent) => void };
+        },
       ) => YouTubePlayer;
     };
     onYouTubeIframeAPIReady?: () => void;
@@ -148,8 +152,18 @@ export function LessonPlayer({
       .then(() => {
         if (!isMounted || !iframeRef.current || !window.YT?.Player) return;
         player = new window.YT.Player(iframeRef.current, {
+          playerVars: {
+            rel: 0,
+            modestbranding: 1,
+            ...(startSeconds > 0 ? { start: Math.floor(startSeconds) } : {}),
+          },
           events: {
-            onReady: captureProgress,
+            onReady: () => {
+              // The IFrame API takeover of the existing iframe does not
+              // guarantee playerVars are re-applied, so seek explicitly.
+              if (startSeconds > 0) player?.seekTo(Math.floor(startSeconds), true);
+              captureProgress();
+            },
             onStateChange: (event) => {
               if (event.data === 1) {
                 if (!hasPlayed) {

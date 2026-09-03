@@ -1,9 +1,8 @@
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { HeaderAuth } from "../../../components/HeaderAuth";
 import { getCourseBySlug } from "../../../sanity/lib/data";
 import { urlFor } from "../../../sanity/lib/image";
 import { CourseContent } from "./course-content";
@@ -47,7 +46,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function CoursePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { isAuthenticated } = await auth();
   const { slug } = await params;
   const course = await getCourseBySlug(slug);
   if (!course) notFound();
@@ -61,7 +59,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
       <header className="course-header">
         <Link className="home-brand" href="/" aria-label="Vertex home"><span className="vertex-logo" aria-hidden="true">V</span><span>Vertex</span></Link>
         <nav className="home-nav" aria-label="Main navigation"><Link href="/courses">Courses</Link><Link href="/my-learning">My Learning</Link></nav>
-        <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>{isAuthenticated ? <UserButton /> : <div className="auth-actions"><SignInButton mode="modal"><button className="auth-link" type="button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="auth-signup" type="button">Sign up</button></SignUpButton></div>}</div>
+        <div className="home-actions"><span className="icon-button" aria-hidden="true"><Icon name="bell" /></span><HeaderAuth /></div>
       </header>
 
       <div className="course-page">

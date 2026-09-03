@@ -1,11 +1,6 @@
-import {
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
+import { HeaderAuth } from "../components/HeaderAuth";
 import { getCourses } from "../sanity/lib/data";
 import { urlFor } from "../sanity/lib/image";
 import type { Course } from "../sanity/lib/data";
@@ -65,7 +60,6 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 export default async function Home() {
-  const { isAuthenticated } = await auth();
   const courses = await getCourses();
   const featuredCourses = courses.slice(-3);
 
@@ -82,18 +76,7 @@ export default async function Home() {
         </nav>
         <div className="home-actions">
           <span className="icon-button" aria-hidden="true"><Icon name="bell" /></span>
-          {isAuthenticated ? (
-            <UserButton />
-          ) : (
-            <div className="auth-actions">
-              <SignInButton mode="modal">
-                <button className="auth-link" type="button">Sign in</button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="auth-signup" type="button">Sign up</button>
-              </SignUpButton>
-            </div>
-          )}
+          <HeaderAuth />
         </div>
       </header>
 

@@ -26,7 +26,7 @@ async function getInitialContext(mcpUrl: string) {
 
   const response = await fetch(getInitialContextUrl(mcpUrl), {
     headers: {Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`},
-    next: {revalidate: 300},
+    signal: AbortSignal.timeout(10000),
   })
 
   if (!response.ok) return cachedInitialContext
