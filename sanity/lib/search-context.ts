@@ -7,6 +7,7 @@ import {dataset, projectId} from '../env'
 const CACHE_TTL_MS = 5 * 60 * 1000
 const DEFAULT_CONTEXT_VERSION = '2026-03-03'
 
+let cachedClient: MCPClient | null = null
 let cachedInitialContext: string | null = null
 let initialContextCachedAt = 0
 
@@ -39,6 +40,10 @@ export async function createSearchContext(): Promise<{client: MCPClient; initial
   if (!token) throw new Error('SANITY_API_READ_TOKEN is not configured')
 
   const url = getMcpUrl()
+  if (cachedClient) {
+    return {client: cachedClient, initialContext: await getInitialContext(url)}
+  }
+
   const [client, initialContext] = await Promise.all([
     createMCPClient({
       transport: {type: 'http', url, headers: {Authorization: `Bearer ${token}`}},
@@ -46,5 +51,18 @@ export async function createSearchContext(): Promise<{client: MCPClient; initial
     getInitialContext(url),
   ])
 
+  cachedClient = client
   return {client, initialContext}
+}
+
+export async function disposeSearchContext() {
+  const client = cachedClient
+  cachedClient = null
+  cachedInitialContext = null
+  initialContextCachedAt = 0
+  try {
+    await client?.close()
+  } catch {
+    // the client is already discarded; nothing useful to do with a close failure
+  }
 }

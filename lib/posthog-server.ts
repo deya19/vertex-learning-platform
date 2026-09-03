@@ -24,3 +24,23 @@ export function getPostHogClient(): PostHog | null {
   }
   return posthogClient;
 }
+
+export async function captureServerEvent({
+  distinctId,
+  event,
+  properties,
+}: {
+  distinctId: string;
+  event: string;
+  properties?: Record<string, boolean | number | string | null>;
+}) {
+  const client = getPostHogClient();
+  if (!client) return;
+
+  try {
+    client.capture({ distinctId, event, properties });
+    await client.flush();
+  } catch {
+    console.error("PostHog server event delivery failed");
+  }
+}

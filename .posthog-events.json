@@ -1,0 +1,19 @@
+[
+  {"event_name":"search:query_submit","event_description":"A search request completed successfully with authoritative result counts.","file":"app/api/search/route.ts"},
+  {"event_name":"search:request_fail","event_description":"A search request failed with a coarse non-sensitive failure category.","file":"app/api/search/route.ts"},
+  {"event_name":"search:result_open","event_description":"A learner opened a lesson or video-moment search result.","file":"app/search/search-results.tsx"},
+  {"event_name":"search:sort_change","event_description":"A learner changed the search result filter.","file":"app/search/search-results.tsx"},
+  {"event_name":"course:continue_click","event_description":"A learner used a course continue-learning action.","file":"app/courses/[slug]/course-actions.tsx"},
+  {"event_name":"course:bookmark_click","event_description":"A learner clicked the presentational course bookmark action.","file":"app/courses/[slug]/course-actions.tsx"},
+  {"event_name":"course:lesson_open","event_description":"A learner opened a lesson from course content.","file":"app/courses/[slug]/course-content.tsx"},
+  {"event_name":"course:module_expand","event_description":"A learner expanded the full course module list.","file":"app/courses/[slug]/course-content.tsx"},
+  {"event_name":"lesson:detail_view","event_description":"A learner viewed a valid lesson detail page with canonical lesson context.","file":"app/lessons/[slug]/lesson-actions.tsx"},
+  {"event_name":"lesson:module_expand","event_description":"A learner expanded a module in the lesson sidebar.","file":"app/lessons/[slug]/lesson-modules.tsx"},
+  {"event_name":"lesson:navigation_click","event_description":"A learner navigated between lessons.","file":"app/lessons/[slug]/lesson-actions.tsx"},
+  {"event_name":"lesson:tab_select","event_description":"A learner selected lesson content or notes.","file":"app/lessons/[slug]/lesson-player.tsx"},
+  {"event_name":"lesson:resource_open","event_description":"A learner opened a lesson resource.","file":"app/lessons/[slug]/lesson-actions.tsx"},
+  {"event_name":"video:play","event_description":"A learner started the supported lesson video player.","file":"app/lessons/[slug]/lesson-player.tsx"},
+  {"event_name":"video:watch_depth_reach","event_description":"A learner reached a video watch-depth milestone.","file":"app/lessons/[slug]/lesson-player.tsx"},
+  {"event_name":"lesson:complete","event_description":"A lesson video reached its ended state.","file":"app/lessons/[slug]/lesson-player.tsx"},
+  {"event_name":"video:embed_unavailable","event_description":"A lesson video could not be represented by a supported embed.","file":"app/lessons/[slug]/lesson-player.tsx"}
+]

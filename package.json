@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingest:videos": "tsx scripts/ingest-videos.ts",
+    "fetch:video-sources": "tsx scripts/fetch-video-sources.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.41",
     "@ai-sdk/openai": "^4.0.52",
     "@clerk/nextjs": "^7.8.2",
+    "@sanity/client": "^8.4.0",
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^5.31.2",
     "ai": "^7.0.85",
@@ -33,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

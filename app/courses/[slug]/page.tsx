@@ -76,15 +76,14 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             <CourseActions
               firstLessonSlug={lessons[0]?.slug}
               courseSlug={course.slug}
-              courseTitle={course.title}
             />
           </div>
         </section>
 
         {course.learningOutcomes?.length ? <section className="learning-panel" aria-labelledby="learning-title"><h2 id="learning-title">What you’ll learn</h2><div className="outcome-grid">{course.learningOutcomes.map((outcome) => <article className="outcome-card" key={outcome._key}><OutcomeIcon icon={outcome.icon} /><div><h3>{outcome.title}</h3><p>{outcome.description}</p></div></article>)}</div></section> : null}
-        <CourseContent modules={course.modules} />
+        <CourseContent courseSlug={course.slug} modules={course.modules} />
       </div>
-      <aside className="progress-bar" aria-label="Your progress"><div><span>Your Progress</span><strong>0% complete</strong></div><div className="progress-track"><span /></div><CourseSidebarActions firstLessonSlug={lessons[0]?.slug} courseSlug={course.slug} courseTitle={course.title} /></aside>
+      <aside className="progress-bar" aria-label="Your progress"><div><span>Your Progress</span><strong>0% complete</strong></div><div className="progress-track"><span /></div><CourseSidebarActions firstLessonSlug={lessons[0]?.slug} courseSlug={course.slug} /></aside>
     </main>
   );
 }
