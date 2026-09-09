@@ -31,13 +31,26 @@ declare global {
         element: HTMLIFrameElement,
         options: {
           playerVars?: Record<string, number | string>;
-          events: { onReady: () => void; onStateChange: (event: YouTubeEvent) => void };
+          events: {
+            onReady: () => void;
+            onStateChange: (event: YouTubeEvent) => void;
+            onError: (event: YouTubeEvent) => void;
+          };
         },
       ) => YouTubePlayer;
     };
     onYouTubeIframeAPIReady?: () => void;
   }
 }
+
+// Watch depth milestones. The first one sits below 25% so that a video that
+// starts but stalls almost immediately still records some progress. When a
+// lesson logs video:play but no milestone, the player never advanced at all.
+const WATCH_DEPTH_MILESTONES = [10, 25, 50, 75, 90, 100];
+
+// A player reporting "playing" while its position does not move is stuck.
+// After this many progress ticks (2s each) with no advance, flag the stall.
+const STALL_TICK_LIMIT = 5;
 
 let youtubeApiPromise: Promise<void> | null = null;
 
@@ -106,6 +119,7 @@ export function LessonPlayer({
 }: LessonPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoId = getYouTubeId(videoUrl);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     if (!videoId || !iframeRef.current) return;
@@ -115,37 +129,79 @@ export function LessonPlayer({
     let progressTimer: number | null = null;
     let hasPlayed = false;
     let hasCompleted = false;
+    let failed = false;
+    // Watchdog state: the last position we saw and how many ticks in a row
+    // the player has not moved past it while it claims to be playing.
+    let lastWatchdogPosition = -1;
+    let stalledTicks = 0;
     const reachedMilestones = new Set<number>();
 
     const stopProgressTimer = () => {
       if (progressTimer !== null) window.clearInterval(progressTimer);
       progressTimer = null;
     };
-    const captureProgress = () => {
-      if (!player) return;
+    const failPlayback = (reason: string, extra: Record<string, number | string> = {}) => {
+      if (failed) return;
+      failed = true;
+      stopProgressTimer();
+      posthog.capture("video:embed_unavailable", {
+        provider: "youtube",
+        course_slug: courseSlug,
+        lesson_slug: lessonSlug,
+        failure_reason: reason,
+        ...extra,
+      });
+      if (isMounted) setUnavailable(true);
+    };
+    const currentPosition = () => {
+      if (!player) return null;
       const duration = player.getDuration() || durationSeconds;
+      if (duration <= 0) return null;
       const position = Math.min(player.getCurrentTime(), duration);
-      if (duration <= 0) return;
-      const depth = (position / duration) * 100;
-      for (const milestone of [25, 50, 75, 90, 100]) {
+      return { position, duration };
+    };
+    const captureProgress = () => {
+      const state = currentPosition();
+      if (!state) return;
+      const depth = (state.position / state.duration) * 100;
+      for (const milestone of WATCH_DEPTH_MILESTONES) {
         if (depth >= milestone && !reachedMilestones.has(milestone)) {
           reachedMilestones.add(milestone);
           posthog.capture("video:watch_depth_reach", {
             provider: "youtube",
             course_slug: courseSlug,
             lesson_slug: lessonSlug,
-            duration_seconds: Math.round(duration),
-            position_seconds: Math.round(position),
+            duration_seconds: Math.round(state.duration),
+            position_seconds: Math.round(state.position),
             watch_depth_percent: milestone,
             start_source: startSource,
           });
         }
       }
     };
+    const monitorTick = () => {
+      captureProgress();
+      const state = currentPosition();
+      if (!state || failed) return;
+      // The position advances while the player really plays. If it does not
+      // move across STALL_TICK_LIMIT ticks, the player is stuck.
+      if (lastWatchdogPosition >= 0 && state.position - lastWatchdogPosition < 0.25) {
+        stalledTicks += 1;
+        if (stalledTicks >= STALL_TICK_LIMIT) {
+          failPlayback("playback_stalled", {
+            position_seconds: Math.round(state.position),
+            duration_seconds: Math.round(state.duration),
+          });
+        }
+      } else {
+        stalledTicks = 0;
+      }
+      lastWatchdogPosition = state.position;
+    };
     const startProgressTimer = () => {
       if (progressTimer !== null) return;
       captureProgress();
-      progressTimer = window.setInterval(captureProgress, 2000);
+      progressTimer = window.setInterval(monitorTick, 2000);
     };
 
     void loadYouTubeApi()
@@ -177,6 +233,10 @@ export function LessonPlayer({
                     start_source: startSource,
                   });
                 }
+                // Reset the watchdog so a pause, resume, or seek does not
+                // carry a stale non-advancing count into the next play.
+                stalledTicks = 0;
+                lastWatchdogPosition = -1;
                 startProgressTimer();
               } else if (event.data === 0) {
                 captureProgress();
@@ -193,17 +253,31 @@ export function LessonPlayer({
               } else if (event.data === 2) {
                 captureProgress();
                 stopProgressTimer();
+              } else if (event.data === 3) {
+                // Buffering is a legitimate pause in progress, so do not let
+                // it accumulate toward a false stall.
+                stalledTicks = 0;
+                lastWatchdogPosition = -1;
               }
+            },
+            onError: (event) => {
+              // A YouTube error (removed video, or embedding blocked by the
+              // channel) leaves a black frame with an endless spinner. Show
+              // the fallback and record why instead.
+              failPlayback("player_error", { error_code: event.data });
             },
           },
         });
       })
       .catch(() => {
         if (!isMounted) return;
+        // The API script itself failed to load. The plain iframe can still
+        // play, so keep it and only record that tracking is unavailable.
         posthog.capture("video:embed_unavailable", {
           provider: "youtube",
           course_slug: courseSlug,
           lesson_slug: lessonSlug,
+          failure_reason: "api_load_failed",
         });
       });
 
@@ -215,6 +289,9 @@ export function LessonPlayer({
   }, [courseSlug, durationSeconds, lessonSlug, startSeconds, startSource, videoId]);
 
   if (!videoId) return <UnavailablePlayer courseSlug={courseSlug} lessonSlug={lessonSlug} />;
+  if (unavailable) {
+    return <div className="lesson-video lesson-video-fallback">This video cannot play right now. Try again later or pick another lesson.</div>;
+  }
 
   const params = new URLSearchParams({
     rel: "0",
