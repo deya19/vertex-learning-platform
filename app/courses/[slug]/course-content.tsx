@@ -36,10 +36,7 @@ export function CourseContent({
   rawModuleCount?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const safeModules = modules
-    .map((module) => ({ ...module, lessons: (module.lessons ?? []).filter(Boolean) }))
-    .filter((module) => module.lessons.length > 0);
-  const hasLessons = safeModules.length > 0;
+  const hasLessons = modules.length > 0;
 
   useEffect(() => {
     if (!hasLessons) {
@@ -65,13 +62,13 @@ export function CourseContent({
     );
   }
 
-  const visibleModules = showAll ? safeModules : safeModules.slice(0, 6);
+  const visibleModules = showAll ? modules : modules.slice(0, 6);
   return (
     <section className="course-content" aria-labelledby="course-content-title">
       <div className="course-section-heading">
         <h2 id="course-content-title">Course Content</h2>
         <p>
-          {safeModules.length} modules <span aria-hidden="true">•</span> {formatDuration(safeModules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.duration, 0))}
+          {modules.length} modules <span aria-hidden="true">•</span> {formatDuration(modules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.duration, 0))}
         </p>
       </div>
       <div className="module-list">
@@ -114,7 +111,7 @@ export function CourseContent({
           </div>
         ))}
       </div>
-      {safeModules.length > 6 && (
+      {modules.length > 6 && (
         <button
           className="show-modules-button"
           type="button"
@@ -124,14 +121,14 @@ export function CourseContent({
             if (next) {
               posthog.capture("course:module_expand", {
                 course_slug: courseSlug,
-                module_count: safeModules.length,
+                module_count: modules.length,
                 source: "course_content",
               });
             }
           }}
           aria-expanded={showAll}
         >
-          {showAll ? "Show fewer modules" : `Show all ${safeModules.length} modules`}
+          {showAll ? "Show fewer modules" : `Show all ${modules.length} modules`}
           <span aria-hidden="true">⌄</span>
         </button>
       )}

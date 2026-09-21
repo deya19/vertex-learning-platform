@@ -50,9 +50,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const course = await getCourseBySlug(slug);
   if (!course) notFound();
 
-  const modules = (course.modules ?? [])
-    .map((module) => ({ ...module, lessons: (module.lessons ?? []).filter(Boolean) }))
-    .filter((module) => module.lessons.length > 0);
+  const modules = (course.modules ?? []).filter((module) => module.lessons.length > 0);
   const lessons = modules.flatMap((module) => module.lessons);
   const totalDuration = lessons.reduce((total, lesson) => total + lesson.duration, 0);
   const coverImage = course.coverImage ? urlFor(course.coverImage).width(900).height(760).fit("crop").url() : null;

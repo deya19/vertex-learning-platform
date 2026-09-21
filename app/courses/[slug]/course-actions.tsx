@@ -19,6 +19,14 @@ function ArrowIcon() {
   );
 }
 
+function DisabledContinueButton() {
+  return (
+    <button className="course-primary-action" type="button" disabled aria-disabled="true">
+      Continue Learning <ArrowIcon />
+    </button>
+  );
+}
+
 type CourseActionsProps = {
   firstLessonSlug: string | undefined;
   courseSlug: string;
@@ -47,9 +55,7 @@ export function CourseActions({ firstLessonSlug, courseSlug }: CourseActionsProp
           Continue Learning <ArrowIcon />
         </Link>
       ) : (
-        <button className="course-primary-action" type="button" disabled aria-disabled="true">
-          Continue Learning <ArrowIcon />
-        </button>
+        <DisabledContinueButton />
       )}
       <button
         className="course-bookmark"
@@ -77,11 +83,7 @@ type CourseSidebarActionsProps = {
  */
 export function CourseSidebarActions({ firstLessonSlug, courseSlug }: CourseSidebarActionsProps) {
   if (!firstLessonSlug) {
-    return (
-      <button className="course-primary-action" type="button" disabled aria-disabled="true">
-        Continue Learning <ArrowIcon />
-      </button>
-    );
+    return <DisabledContinueButton />;
   }
 
   return (
