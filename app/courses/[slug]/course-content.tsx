@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 
@@ -26,8 +26,42 @@ function formatDuration(seconds: number) {
   return `${minutes}m`;
 }
 
-export function CourseContent({ courseSlug, modules }: { courseSlug: string; modules: CourseModule[] }) {
+export function CourseContent({
+  courseSlug,
+  modules,
+  rawModuleCount,
+}: {
+  courseSlug: string;
+  modules: CourseModule[];
+  rawModuleCount?: number;
+}) {
   const [showAll, setShowAll] = useState(false);
+  const hasLessons = modules.length > 0;
+
+  useEffect(() => {
+    if (!hasLessons) {
+      posthog.capture("course:curriculum_empty", {
+        course_slug: courseSlug,
+        module_count: rawModuleCount ?? modules.length,
+      });
+    }
+  }, [hasLessons, courseSlug, rawModuleCount, modules.length]);
+
+  if (!hasLessons) {
+    return (
+      <section className="course-content" aria-labelledby="course-content-title">
+        <div className="course-section-heading">
+          <h2 id="course-content-title">Course Content</h2>
+        </div>
+        <div className="course-content-empty">
+          <h3>Lessons are on the way</h3>
+          <p>This course does not have any lessons ready yet. Explore the rest of the catalog while we finish it.</p>
+          <Link className="course-primary-action" href="/courses">Browse all courses</Link>
+        </div>
+      </section>
+    );
+  }
+
   const visibleModules = showAll ? modules : modules.slice(0, 6);
   return (
     <section className="course-content" aria-labelledby="course-content-title">

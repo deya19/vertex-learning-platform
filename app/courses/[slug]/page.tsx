@@ -50,7 +50,8 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const course = await getCourseBySlug(slug);
   if (!course) notFound();
 
-  const lessons = course.modules.flatMap((module) => module.lessons);
+  const modules = (course.modules ?? []).filter((module) => module.lessons.length > 0);
+  const lessons = modules.flatMap((module) => module.lessons);
   const totalDuration = lessons.reduce((total, lesson) => total + lesson.duration, 0);
   const coverImage = course.coverImage ? urlFor(course.coverImage).width(900).height(760).fit("crop").url() : null;
 
@@ -70,7 +71,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             {course.isPopular && <span className="popular-badge">Popular</span>}
             <h1 id="course-title">{course.title}</h1>
             <p className="course-summary">{course.summary}</p>
-            <div className="course-meta-detail"><span><Icon name="level" />{course.level[0].toUpperCase() + course.level.slice(1)}</span><span><Icon name="clock" />{formatDuration(totalDuration)}</span><span><Icon name="modules" />{course.modules.length} modules</span><span><Icon name="students" />{course.studentCount?.toLocaleString() ?? 0} students</span></div>
+            <div className="course-meta-detail"><span><Icon name="level" />{course.level[0].toUpperCase() + course.level.slice(1)}</span><span><Icon name="clock" />{formatDuration(totalDuration)}</span><span><Icon name="modules" />{modules.length} modules</span><span><Icon name="students" />{course.studentCount?.toLocaleString() ?? 0} students</span></div>
             <CourseActions
               firstLessonSlug={lessons[0]?.slug}
               courseSlug={course.slug}
@@ -79,7 +80,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         </section>
 
         {course.learningOutcomes?.length ? <section className="learning-panel" aria-labelledby="learning-title"><h2 id="learning-title">What you’ll learn</h2><div className="outcome-grid">{course.learningOutcomes.map((outcome) => <article className="outcome-card" key={outcome._key}><OutcomeIcon icon={outcome.icon} /><div><h3>{outcome.title}</h3><p>{outcome.description}</p></div></article>)}</div></section> : null}
-        <CourseContent courseSlug={course.slug} modules={course.modules} />
+        <CourseContent courseSlug={course.slug} modules={modules} rawModuleCount={course.modules?.length ?? 0} />
       </div>
       <aside className="progress-bar" aria-label="Your progress"><div><span>Your Progress</span><strong>0% complete</strong></div><div className="progress-track"><span /></div><CourseSidebarActions firstLessonSlug={lessons[0]?.slug} courseSlug={course.slug} /></aside>
     </main>

@@ -65,12 +65,26 @@ export type Lesson = LessonCard & {
   })[]
 }
 
+// Dereferencing a deleted lesson reference (`lessons[]->`) yields a null array
+// entry. Drop those here so every consumer receives resolvable lessons only.
+function withResolvedLessons(course: Course): Course {
+  return {
+    ...course,
+    modules: (course.modules ?? []).map((module) => ({
+      ...module,
+      lessons: (module.lessons ?? []).filter(Boolean),
+    })),
+  }
+}
+
 export async function getCourses() {
-  return sanityFetch<Course[]>({query: COURSES_QUERY, tags: ['course', 'lesson', 'instructor', 'category']})
+  const courses = await sanityFetch<Course[]>({query: COURSES_QUERY, tags: ['course', 'lesson', 'instructor', 'category']})
+  return courses.map(withResolvedLessons)
 }
 
 export async function getCourseBySlug(slug: string) {
-  return sanityFetch<Course | null>({query: COURSE_BY_SLUG_QUERY, params: {slug}, tags: [`course:${slug}`, 'lesson', 'instructor', 'category']})
+  const course = await sanityFetch<Course | null>({query: COURSE_BY_SLUG_QUERY, params: {slug}, tags: [`course:${slug}`, 'lesson', 'instructor', 'category']})
+  return course ? withResolvedLessons(course) : null
 }
 
 export async function getLessonBySlug(slug: string) {
