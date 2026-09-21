@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 
@@ -26,15 +26,52 @@ function formatDuration(seconds: number) {
   return `${minutes}m`;
 }
 
-export function CourseContent({ courseSlug, modules }: { courseSlug: string; modules: CourseModule[] }) {
+export function CourseContent({
+  courseSlug,
+  modules,
+  rawModuleCount,
+}: {
+  courseSlug: string;
+  modules: CourseModule[];
+  rawModuleCount?: number;
+}) {
   const [showAll, setShowAll] = useState(false);
-  const visibleModules = showAll ? modules : modules.slice(0, 6);
+  const safeModules = modules
+    .map((module) => ({ ...module, lessons: (module.lessons ?? []).filter(Boolean) }))
+    .filter((module) => module.lessons.length > 0);
+  const hasLessons = safeModules.length > 0;
+
+  useEffect(() => {
+    if (!hasLessons) {
+      posthog.capture("course:curriculum_empty", {
+        course_slug: courseSlug,
+        module_count: rawModuleCount ?? modules.length,
+      });
+    }
+  }, [hasLessons, courseSlug, rawModuleCount, modules.length]);
+
+  if (!hasLessons) {
+    return (
+      <section className="course-content" aria-labelledby="course-content-title">
+        <div className="course-section-heading">
+          <h2 id="course-content-title">Course Content</h2>
+        </div>
+        <div className="course-content-empty">
+          <h3>Lessons are on the way</h3>
+          <p>This course does not have any lessons ready yet. Explore the rest of the catalog while we finish it.</p>
+          <Link className="course-primary-action" href="/courses">Browse all courses</Link>
+        </div>
+      </section>
+    );
+  }
+
+  const visibleModules = showAll ? safeModules : safeModules.slice(0, 6);
   return (
     <section className="course-content" aria-labelledby="course-content-title">
       <div className="course-section-heading">
         <h2 id="course-content-title">Course Content</h2>
         <p>
-          {modules.length} modules <span aria-hidden="true">•</span> {formatDuration(modules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.duration, 0))}
+          {safeModules.length} modules <span aria-hidden="true">•</span> {formatDuration(safeModules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.duration, 0))}
         </p>
       </div>
       <div className="module-list">
@@ -77,7 +114,7 @@ export function CourseContent({ courseSlug, modules }: { courseSlug: string; mod
           </div>
         ))}
       </div>
-      {modules.length > 6 && (
+      {safeModules.length > 6 && (
         <button
           className="show-modules-button"
           type="button"
@@ -87,14 +124,14 @@ export function CourseContent({ courseSlug, modules }: { courseSlug: string; mod
             if (next) {
               posthog.capture("course:module_expand", {
                 course_slug: courseSlug,
-                module_count: modules.length,
+                module_count: safeModules.length,
                 source: "course_content",
               });
             }
           }}
           aria-expanded={showAll}
         >
-          {showAll ? "Show fewer modules" : `Show all ${modules.length} modules`}
+          {showAll ? "Show fewer modules" : `Show all ${safeModules.length} modules`}
           <span aria-hidden="true">⌄</span>
         </button>
       )}

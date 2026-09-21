@@ -30,23 +30,27 @@ type CourseActionsProps = {
  * click events can be captured with PostHog.
  */
 export function CourseActions({ firstLessonSlug, courseSlug }: CourseActionsProps) {
-  const href = firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#";
-
   return (
     <div className="course-actions">
-      <Link
-        className="course-primary-action"
-        href={href}
-        onClick={() =>
-          posthog.capture("course:continue_click", {
-            course_slug: courseSlug,
-            lesson_slug: firstLessonSlug ?? null,
-            source: "hero",
-          })
-        }
-      >
-        Continue Learning <ArrowIcon />
-      </Link>
+      {firstLessonSlug ? (
+        <Link
+          className="course-primary-action"
+          href={`/lessons/${firstLessonSlug}`}
+          onClick={() =>
+            posthog.capture("course:continue_click", {
+              course_slug: courseSlug,
+              lesson_slug: firstLessonSlug,
+              source: "hero",
+            })
+          }
+        >
+          Continue Learning <ArrowIcon />
+        </Link>
+      ) : (
+        <button className="course-primary-action" type="button" disabled aria-disabled="true">
+          Continue Learning <ArrowIcon />
+        </button>
+      )}
       <button
         className="course-bookmark"
         type="button"
@@ -72,16 +76,22 @@ type CourseSidebarActionsProps = {
  * Sidebar version of the Continue Learning CTA (used in the progress aside).
  */
 export function CourseSidebarActions({ firstLessonSlug, courseSlug }: CourseSidebarActionsProps) {
-  const href = firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#";
+  if (!firstLessonSlug) {
+    return (
+      <button className="course-primary-action" type="button" disabled aria-disabled="true">
+        Continue Learning <ArrowIcon />
+      </button>
+    );
+  }
 
   return (
     <Link
       className="course-primary-action"
-      href={href}
+      href={`/lessons/${firstLessonSlug}`}
       onClick={() =>
         posthog.capture("course:continue_click", {
           course_slug: courseSlug,
-          lesson_slug: firstLessonSlug ?? null,
+          lesson_slug: firstLessonSlug,
           source: "sidebar",
         })
       }
